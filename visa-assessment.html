@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>美签通过率智能测评</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,'Segoe UI',sans-serif}
+body{background:#f8f9fe;min-height:100vh;color:#1a1a2e;-webkit-font-smoothing:antialiased}
+::selection{background:#3b56ff;color:#fff}
+
+/* 页面容器 */
+.page{display:none;min-height:100vh;flex-direction:column}
+.page.active{display:flex}
+
+/* 首页 */
+.home-page{align-items:center;justify-content:center;padding:40px 24px;text-align:center}
+.badge{display:inline-flex;align-items:center;gap:8px;background:#e8ecff;color:#3b56ff;padding:10px 20px;border-radius:50px;font-size:13px;font-weight:600;margin-bottom:24px}
+.badge svg{width:16px;height:16px}
+.home-title{font-size:36px;font-weight:800;line-height:1.2;margin-bottom:12px}
+.home-title span{color:#3b56ff}
+.home-subtitle{font-size:16px;color:#666;line-height:1.6;margin-bottom:32px;max-width:400px}
+.btn-primary{background:#3b56ff;color:#fff;border:none;padding:16px 40px;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px}
+.btn-primary:hover{background:#2a45ee;transform:translateY(-2px)}
+.btn-primary:active{transform:translateY(0)}
+
+.features{display:flex;gap:24px;margin:32px 0;flex-wrap:wrap;justify-content:center}
+.feature-item{display:flex;align-items:center;gap:8px;font-size:14px;color:#555}
+.feature-item svg{width:18px;height:18px;color:#3b56ff}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;max-width:600px;width:100%;margin-top:24px}
+.card{background:#fff;padding:24px;border-radius:16px;text-align:left;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+.card-icon{width:48px;height:48px;background:#e8ecff;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+.card-icon svg{width:24px;height:24px;color:#3b56ff}
+.card h3{font-size:16px;font-weight:700;margin-bottom:8px}
+.card p{font-size:13px;color:#666;line-height:1.5}
+
+.steps{display:flex;align-items:center;gap:16px;margin-top:32px;font-size:13px;color:#666}
+.steps .step-num{width:28px;height:28px;background:#3b56ff;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.steps .step-arrow{color:#ccc}
+
+.disclaimer{font-size:11px;color:#999;margin-top:40px}
+
+/* 测评页 */
+.quiz-page{padding:0}
+.quiz-header{background:#fff;padding:20px 24px;border-bottom:1px solid #eee;position:sticky;top:0;z-index:100}
+.quiz-header-top{display:flex;align-items:center;gap:16px;margin-bottom:12px}
+.back-btn{width:40px;height:40px;border:none;background:#f5f5f5;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
+.back-btn:hover{background:#eee}
+.progress-info{flex:1;font-size:14px;font-weight:600}
+.progress-bar{height:6px;background:#e8ecff;border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:#3b56ff;border-radius:3px;transition:width .3s}
+
+.quiz-content{flex:1;padding:32px 24px;max-width:600px;margin:0 auto;width:100%}
+.question-title{font-size:20px;font-weight:700;margin-bottom:24px;line-height:1.4}
+.options{display:flex;flex-direction:column;gap:12px}
+.option-card{background:#fff;border:2px solid #e8e8e8;border-radius:12px;padding:16px 20px;cursor:pointer;transition:all .2s;text-align:left}
+.option-card:hover{border-color:#3b56ff}
+.option-card.selected{border-color:#3b56ff;background:#e8ecff}
+.option-card h4{font-size:15px;font-weight:600;margin-bottom:4px}
+.option-card p{font-size:13px;color:#888}
+
+.quiz-footer{padding:20px 24px;background:#fff;border-top:1px solid #eee;display:flex;justify-content:space-between;gap:12px}
+.btn-secondary{background:#f5f5f5;color:#333;border:none;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:.2s}
+.btn-secondary:hover{background:#eee}
+.btn-secondary:disabled{opacity:.5;cursor:not-allowed}
+
+/* 结果页 */
+.result-page{padding:40px 24px;align-items:center}
+.result-card{background:#fff;border-radius:24px;padding:40px 32px;max-width:480px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+
+.score-circle{width:160px;height:160px;margin:0 auto 24px;position:relative}
+.score-circle svg{width:100%;height:100%;transform:rotate(-90deg)}
+.score-circle-bg{fill:none;stroke:#e8ecff;stroke-width:12}
+.score-circle-fill{fill:none;stroke:#3b56ff;stroke-width:12;stroke-linecap:round;stroke-dasharray:440;stroke-dashoffset:440;transition:stroke-dashoffset 1.5s ease}
+.score-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score-percent{font-size:48px;font-weight:800;color:#1a1a2e}
+.score-label{font-size:14px;color:#666;margin-top:4px}
+
+.risk-badge{display:inline-block;padding:8px 20px;border-radius:20px;font-size:14px;font-weight:600;margin-bottom:24px}
+.risk-low{background:#d4edda;color:#155724}
+.risk-medium{background:#fff3cd;color:#856404}
+.risk-high{background:#f8d7da;color:#721c24}
+
+.analysis-section{text-align:left;margin:24px 0}
+.analysis-section h3{font-size:16px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.analysis-section h3 svg{width:20px;height:20px}
+.analysis-section p,.analysis-section li{font-size:14px;color:#555;line-height:1.7}
+.analysis-section ul{margin-left:20px}
+.analysis-section li{margin:6px 0}
+
+.ai-btn{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;padding:14px 28px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;margin:16px 0}
+.ai-btn:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(102,126,234,.4)}
+
+.loading{display:none;align-items:center;gap:12px;justify-content:center;color:#666;font-size:14px}
+.loading.show{display:flex}
+.spinner{width:20px;height:20px;border:2px solid #e8ecff;border-top-color:#3b56ff;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.hidden{display:none}
+
+.error-msg{background:#f8d7da;color:#721c24;padding:12px 16px;border-radius:8px;margin:12px 0;font-size:13px}
+</style>
+</head>
+<body>
+
+<!-- 首页 -->
+<div class="page home-page active" id="homePage">
+  <div class="badge">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+    专业美签通过率评估工具
+  </div>
+  
+  <h1 class="home-title">美签通过率<br><span>智能测评</span></h1>
+  <p class="home-subtitle">基于签证官审核逻辑，全面评估您的背景条件，AI生成个性化提升方案</p>
+  
+  <button class="btn-primary" onclick="startQuiz()">开始测评 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+  
+  <div class="features">
+    <div class="feature-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>23大核心维度</div>
+    <div class="feature-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>AI智能建议</div>
+    <div class="feature-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>个性化报告</div>
+  </div>
+  
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+      <h3>23维度评估</h3>
+      <p>涵盖出境记录、户籍、工作、学历等核心因素</p>
+    </div>
+    <div class="card">
+      <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></div>
+      <h3>AI智能分析</h3>
+      <p>个性化分析报告，精准改进方案</p>
+    </div>
+    <div class="card">
+      <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <h3>3分钟完成</h3>
+      <p>快速回答23个问题，即刻获取结果</p>
+    </div>
+  </div>
+  
+  <div class="steps">
+    <div style="display:flex;align-items:center;gap:8px"><span class="step-num">01</span>回答23个问题</div>
+    <span class="step-arrow">→</span>
+    <div style="display:flex;align-items:center;gap:8px"><span class="step-num">02</span>系统自动评分</div>
+    <span class="step-arrow">→</span>
+    <div style="display:flex;align-items:center;gap:8px"><span class="step-num">03</span>AI生成报告</div>
+  </div>
+  
+  <p class="disclaimer">测评结果仅供参考，不构成签证申请承诺</p>
+</div>
+
+<!-- 测评页 -->
+<div class="page quiz-page" id="quizPage">
+  <div class="quiz-header">
+    <div class="quiz-header-top">
+      <button class="back-btn" onclick="goBack()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+      <div class="progress-info">问题 <span id="currentQ">1</span>/23</div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:4%"></div></div>
+  </div>
+  
+  <div class="quiz-content">
+    <h2 class="question-title" id="questionTitle">您的年龄段是？</h2>
+    <div class="options" id="options"></div>
+  </div>
+  
+  <div class="quiz-footer">
+    <button class="btn-secondary" id="prevBtn" onclick="prevQuestion()" disabled>上一题</button>
+    <button class="btn-primary" id="nextBtn" onclick="nextQuestion()" disabled>下一题</button>
+  </div>
+</div>
+
+<!-- 结果页 -->
+<div class="page result-page" id="resultPage">
+  <div class="result-card">
+    <div class="score-circle">
+      <svg viewBox="0 0 160 160">
+        <circle class="score-circle-bg" cx="80" cy="80" r="70"/>
+        <circle class="score-circle-fill" id="scoreCircle" cx="80" cy="80" r="70"/>
+      </svg>
+      <div class="score-text">
+        <div class="score-percent" id="scorePercent">0%</div>
+        <div class="score-label">通过率</div>
+      </div>
+    </div>
+    
+    <div class="risk-badge" id="riskBadge">评估中...</div>
+    
+    <div id="presetAnalysis">
+      <div class="analysis-section">
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="#3b56ff" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>总体评估</h3>
+        <p id="overallText">根据您的背景条件，我们为您生成了详细的签证通过率评估报告。</p>
+      </div>
+      
+      <div class="analysis-section">
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="#28a745" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>优势分析</h3>
+        <ul id="strengthsList"></ul>
+      </div>
+      
+      <div class="analysis-section">
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="#dc3545" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>风险提示</h3>
+        <ul id="risksList"></ul>
+      </div>
+      
+      <div class="analysis-section">
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="#ffc107" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>改进建议</h3>
+        <ul id="suggestionsList"></ul>
+      </div>
+    </div>
+    
+    <div class="loading" id="aiLoading">
+      <div class="spinner"></div>
+      <span>AI正在生成深度分析...</span>
+    </div>
+    
+    <div id="aiError" class="error-msg hidden"></div>
+    
+    <button class="ai-btn" id="aiBtn" onclick="generateAIAnalysis()">🤖 AI深度分析</button>
+    
+    <button class="btn-secondary" onclick="resetQuiz()" style="margin-top:16px">重新测评</button>
+  </div>
+</div>
+
+<script>
+// ========== 题目数据 ==========
+const commonQuestions = [
+  {
+    id: 'age',
+    title: '您的年龄段是？',
+    options: [
+      {text: '18-23岁', desc: '学生群体，约束力评估重点', score: 5},
+      {text: '24-30岁', desc: '职场新人，发展潜力期', score: 7},
+      {text: '31-45岁', desc: '职业成熟期，稳定性高', score: 8},
+      {text: '46-60岁', desc: '资深人士，资产积累期', score: 7},
+      {text: '60岁以上', desc: '退休人群，需评估回国意愿', score: 4}
+    ]
+  },
+  {
+    id: 'gender',
+    title: '您的性别是？',
+    options: [
+      {text: '男', desc: '', score: 5},
+      {text: '女', desc: '', score: 5}
+    ]
+  },
+  {
+    id: 'hukou',
+    title: '您的户籍所在地？',
+    options: [
+      {text: '一线城市', desc: '北京/上海/广州/深圳', score: 8},
+      {text: '新一线/二线城市', desc: '杭州/成都/武汉等', score: 7},
+      {text: '三四线城市', desc: '地级市/县级市', score: 5},
+      {text: '县城/农村', desc: '需评估经济约束力', score: 3}
+    ]
+  },
+  {
+    id: 'marriage',
+    title: '您的婚姻状况？',
+    options: [
+      {text: '已婚', desc: '家庭约束力强', score: 8},
+      {text: '未婚', desc: '需评估其他约束力', score: 5},
+      {text: '离异', desc: '需综合评估', score: 4},
+      {text: '丧偶', desc: '需综合评估', score: 4}
+    ]
+  },
+  {
+    id: 'visa_history',
+    title: '您的美签申请经历？',
+    options: [
+      {text: '从未申请', desc: '首次申请，白本记录', score: 5},
+      {text: '曾获批且有效', desc: '良好记录，加分项', score: 10},
+      {text: '曾拒签', desc: '需解释拒签原因', score: 2},
+      {text: '已过期', desc: '有良好履约记录', score: 8}
+    ]
+  },
+  {
+    id: 'travel_history',
+    title: '您的出境旅行经历？',
+    options: [
+      {text: '从未出过国', desc: '白本护照，风险较高', score: 2},
+      {text: '仅发展中国家', desc: '东南亚/非洲等', score: 4},
+      {text: '去过发达国家', desc: '欧洲/日韩/澳洲等', score: 8},
+      {text: '多次多国旅行', desc: '丰富出境记录', score: 10}
+    ]
+  },
+  {
+    id: 'purpose',
+    title: '您的赴美目的是？',
+    options: [
+      {text: '旅游观光', desc: 'B2签证，最常见目的', score: 7},
+      {text: '商务访问', desc: 'B1签证，需邀请函', score: 7},
+      {text: '探亲访友', desc: '需亲属/朋友担保', score: 6},
+      {text: '留学', desc: 'F1签证，需I-20', score: 8},
+      {text: '就医', desc: 'B2医疗签证', score: 5},
+      {text: '参加会议', desc: 'B1商务签证', score: 7}
+    ]
+  },
+  {
+    id: 'duration',
+    title: '计划在美国停留多久？',
+    options: [
+      {text: '1周内', desc: '短期访问', score: 8},
+      {text: '1-2周', desc: '常规旅游时长', score: 8},
+      {text: '2-4周', desc: '深度游/探亲', score: 6},
+      {text: '1-3个月', desc: '长期停留，需充分理由', score: 4},
+      {text: '3个月以上', desc: '超长停留，风险较高', score: 2}
+    ]
+  },
+  {
+    id: 'relatives',
+    title: '您在美国有亲属吗？',
+    options: [
+      {text: '无', desc: '无移民倾向加分', score: 8},
+      {text: '远亲', desc: '关系较远，影响小', score: 6},
+      {text: '直系亲属', desc: '父母/子女在美', score: 3},
+      {text: '配偶在美', desc: '需评估真实目的', score: 2},
+      {text: '计划移民', desc: '需申请移民签证', score: 1}
+    ]
+  },
+  {
+    id: 'criminal',
+    title: '您有犯罪记录吗？',
+    options: [
+      {text: '无', desc: '良好记录', score: 10},
+      {text: '轻微违法', desc: '交通违章等', score: 6},
+      {text: '严重犯罪', desc: '可能影响签证', score: 0}
+    ]
+  },
+  {
+    id: 'companion',
+    title: '您的出行方式是？',
+    options: [
+      {text: '独自出行', desc: '需评估独立能力', score: 5},
+      {text: '与配偶同行', desc: '家庭出行，约束力强', score: 8},
+      {text: '与家人同行', desc: '家庭出行，约束力强', score: 8},
+      {text: '与朋友同行', desc: '社交出行', score: 6},
+      {text: '跟团出行', desc: '有旅行社担保', score: 7}
+    ]
+  }
+];
+
+const adultQuestions = [
+  {
+    id: 'employment',
+    title: '您目前的就业状况？',
+    options: [
+      {text: '在职', desc: '有稳定工作', score: 8},
+      {text: '自主创业', desc: '企业主/个体户', score: 7},
+      {text: '失业', desc: '无固定收入', score: 2},
+      {text: '退休', desc: '有退休金', score: 6},
+      {text: '学生', desc: '非全日制学生', score: 4}
+    ]
+  },
+  {
+    id: 'company_type',
+    title: '您所在单位类型？',
+    options: [
+      {text: '国企/政府/事业单位', desc: '稳定性最高', score: 10},
+      {text: '外资企业', desc: '国际化背景', score: 8},
+      {text: '大型民企', desc: '知名企业', score: 7},
+      {text: '中小民企', desc: '普通企业', score: 5},
+      {text: '自由职业', desc: '收入不稳定', score: 3}
+    ]
+  },
+  {
+    id: 'income',
+    title: '您的月收入水平？',
+    options: [
+      {text: '5,000元以下', desc: '低收入', score: 2},
+      {text: '5,000-10,000元', desc: '中等偏低', score: 4},
+      {text: '10,000-20,000元', desc: '中等收入', score: 6},
+      {text: '20,000-50,000元', desc: '高收入', score: 9},
+      {text: '50,000元以上', desc: '超高收入', score: 10}
+    ]
+  },
+  {
+    id: 'work_years',
+    title: '您的工作年限？',
+    options: [
+      {text: '1年以内', desc: '职场新人', score: 3},
+      {text: '1-3年', desc: '初步稳定', score: 5},
+      {text: '3-5年', desc: '职业上升期', score: 7},
+      {text: '5-10年', desc: '资深员工', score: 9},
+      {text: '10年以上', desc: '资深人士', score: 10}
+    ]
+  },
+  {
+    id: 'education',
+    title: '您的最高学历？',
+    options: [
+      {text: '高中及以下', desc: '', score: 3},
+      {text: '大专', desc: '', score: 5},
+      {text: '本科', desc: '', score: 7},
+      {text: '硕士', desc: '', score: 9},
+      {text: '博士', desc: '', score: 10}
+    ]
+  },
+  {
+    id: 'property',
+    title: '您名下的房产情况？',
+    options: [
+      {text: '无房产', desc: '', score: 2},
+      {text: '1套房产', desc: '', score: 7},
+      {text: '2套及以上', desc: '', score: 10}
+    ]
+  },
+  {
+    id: 'vehicle',
+    title: '您名下的车辆情况？',
+    options: [
+      {text: '无车辆', desc: '', score: 3},
+      {text: '1辆车', desc: '', score: 6},
+      {text: '2辆及以上', desc: '', score: 8}
+    ]
+  },
+  {
+    id: 'deposit',
+    title: '您的银行存款余额？',
+    options: [
+      {text: '5万以下', desc: '', score: 2},
+      {text: '5-20万', desc: '', score: 5},
+      {text: '20-50万', desc: '', score: 7},
+      {text: '50-100万', desc: '', score: 9},
+      {text: '100万以上', desc: '', score: 10}
+    ]
+  },
+  {
+    id: 'children',
+    title: '您的子女情况？',
+    options: [
+      {text: '无子女', desc: '', score: 4},
+      {text: '1个子女', desc: '家庭约束', score: 8},
+      {text: '2个及以上', desc: '强家庭约束', score: 10}
+    ]
+  },
+  {
+    id: 'position',
+    title: '您的职位级别？',
+    options: [
+      {text: '基层员工', desc: '', score: 4},
+      {text: '中级管理', desc: '', score: 6},
+      {text: '高级管理', desc: '', score: 8},
+      {text: '管理层', desc: '', score: 9},
+      {text: '高管/企业主', desc: '', score: 10}
+    ]
+  },
+  {
+    id: 'social',
+    title: '您的社交媒体活跃度？',
+    options: [
+      {text: '无社交账号', desc: '', score: 3},
+      {text: '偶尔使用', desc: '', score: 5},
+      {text: '活跃使用', desc: '', score: 7},
+      {text: '非常活跃', desc: '', score: 6}
+    ]
+  },
+  {
+    id: 'payer',
+    title: '赴美费用由谁承担？',
+    options: [
+      {text: '自费', desc: '', score: 7},
+      {text: '公司承担', desc: '', score: 8},
+      {text: '家人资助', desc: '', score: 6},
+      {text: '其他', desc: '', score: 5}
+    ]
+  }
+];
+
+const studentQuestions = [
+  {
+    id: 'grade',
+    title: '您目前的就读年级？',
+    options: [
+      {text: '大一', desc: '约束力较弱，签证风险高', score: 2},
+      {text: '大二', desc: '最佳签证时机', score: 10},
+      {text: '大三', desc: '最佳签证时机', score: 10},
+      {text: '大四', desc: '约束力较弱，签证风险高', score: 3},
+      {text: '研一/研二', desc: '研究生阶段', score: 8},
+      {text: '博士在读', desc: '高学历阶段', score: 9},
+      {text: '已毕业/其他', desc: '', score: 4}
+    ]
+  },
+  {
+    id: 'school_level',
+    title: '您的院校层次？',
+    options: [
+      {text: '985高校', desc: '顶尖学府', score: 10},
+      {text: 'C9联盟', desc: '超一流高校', score: 10},
+      {text: '211高校', desc: '重点大学', score: 9},
+      {text: '普通公办', desc: '一般本科', score: 6},
+      {text: '民办本科', desc: '', score: 4},
+      {text: '专科院校', desc: '', score: 3},
+      {text: '高中在读', desc: '', score: 2}
+    ]
+  },
+  {
+    id: 'major',
+    title: '您的专业类别？',
+    options: [
+      {text: '理工科/STEM', desc: '科技工程数学', score: 8},
+      {text: '商科/经济/金融', desc: '', score: 7},
+      {text: '文科/艺术/人文', desc: '', score: 5},
+      {text: '医学/生命科学', desc: '', score: 7},
+      {text: '其他', desc: '', score: 5}
+    ]
+  },
+  {
+    id: 'parents_income',
+    title: '您父母的经济状况？',
+    options: [
+      {text: '非常富裕（年入100万+）', desc: '', score: 10},
+      {text: '较好（年入50-100万）', desc: '', score: 9},
+      {text: '中等（年入20-50万）', desc: '', score: 7},
+      {text: '一般（年入10-20万）', desc: '', score: 5},
+      {text: '困难（年入10万以下）', desc: '', score: 2}
+    ]
+  },
+  {
+    id: 'parents_job',
+    title: '您父母的职业类型？',
+    options: [
+      {text: '公务员/国企/事业单位', desc: '稳定性高', score: 10},
+      {text: '企业主/经商', desc: '收入高但波动', score: 8},
+      {text: '外企专业人士', desc: '国际化背景', score: 8},
+      {text: '普通职员', desc: '', score: 6},
+      {text: '个体经营', desc: '', score: 5},
+      {text: '务工/务农/其他', desc: '', score: 3}
+    ]
+  },
+  {
+    id: 'family_property',
+    title: '您家庭的房产情况？',
+    options: [
+      {text: '无房产', desc: '', score: 2},
+      {text: '1套房产', desc: '', score: 7},
+      {text: '2套及以上', desc: '', score: 10}
+    ]
+  },
+  {
+    id: 'fee_source',
+    title: '赴美费用由谁承担？',
+    options: [
+      {text: '自己积蓄/兼职', desc: '', score: 6},
+      {text: '父母资助', desc: '', score: 8},
+      {text: '其他亲属', desc: '', score: 5},
+      {text: '奖学金/助学金', desc: '', score: 9}
+    ]
+  },
+  {
+    id: 'gpa',
+    title: '您的学业成绩排名？',
+    options: [
+      {text: '前10%', desc: '优秀', score: 10},
+      {text: '前30%', desc: '良好', score: 8},
+      {text: '中等水平', desc: '', score: 6},
+      {text: '中下/较差', desc: '', score: 3},
+      {text: '不适用', desc: '', score: 5}
+    ]
+  },
+  {
+    id: 'internship',
+    title: '您有实习经验吗？',
+    options: [
+      {text: '无实习经验', desc: '', score: 3},
+      {text: '6个月以内', desc: '', score: 6},
+      {text: '6-12个月', desc: '', score: 8},
+      {text: '1年以上', desc: '', score: 10}
+    ]
+  },
+  {
+    id: 'future_plan',
+    title: '您毕业后的规划？',
+    options: [
+      {text: '明确回国发展', desc: '强回国约束力', score: 10},
+      {text: '继续深造', desc: '读研/读博', score: 7},
+      {text: '尚未确定', desc: '', score: 4},
+      {text: '希望国外工作', desc: '移民倾向风险', score: 2}
+    ]
+  },
+  {
+    id: 'activities',
+    title: '您的课外活动情况？',
+    options: [
+      {text: '无课外活动', desc: '', score: 2},
+      {text: '社团成员', desc: '', score: 6},
+      {text: '社团负责人/学生会', desc: '领导力体现', score: 9},
+      {text: '竞赛奖项/学术成果', desc: '突出成就', score: 10}
+    ]
+  },
+  {
+    id: 'siblings',
+    title: '您的家庭子女状况？',
+    options: [
+      {text: '独生子女', desc: '家庭约束力强', score: 10},
+      {text: '1个兄弟姐妹', desc: '', score: 7},
+      {text: '2个及以上', desc: '', score: 5}
+    ]
+  }
+];
+
+// ========== 状态 ==========
+let currentQ = 0;
+let answers = {};
+let questions = [];
+
+// ========== 页面切换 ==========
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startQuiz(){
+  currentQ = 0;
+  answers = {};
+  questions = [...commonQuestions];
+  showPage('quizPage');
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const q = questions[currentQ];
+  document.getElementById('currentQ').textContent = currentQ + 1;
+  document.getElementById('progressFill').style.width = ((currentQ + 1) / 23 * 100) + '%';
+  document.getElementById('questionTitle').textContent = q.title;
+  
+  const opts = document.getElementById('options');
+  opts.innerHTML = q.options.map((opt, i) => `
+    <div class="option-card ${answers[q.id] === i ? 'selected' : ''}" onclick="selectOption(${i})">
+      <h4>${opt.text}</h4>
+      ${opt.desc ? `<p>${opt.desc}</p>` : ''}
+    </div>
+  `).join('');
+  
+  document.getElementById('prevBtn').disabled = currentQ === 0;
+  document.getElementById('nextBtn').textContent = currentQ === 22 ? '提交评估' : '下一题';
+  document.getElementById('nextBtn').disabled = answers[q.id] === undefined;
+}
+
+function selectOption(idx){
+  const q = questions[currentQ];
+  answers[q.id] = idx;
+  renderQuestion();
+}
+
+function nextQuestion(){
+  const q = questions[currentQ];
+  
+  // 第1题（年龄）决定后续分支
+  if (currentQ === 0) {
+    const ageIdx = answers['age'];
+    if (ageIdx === 0) { // 18-23岁，使用学生题
+      questions = [...commonQuestions, ...studentQuestions];
+    } else { // 24岁以上，使用成人题
+      questions = [...commonQuestions, ...adultQuestions];
+    }
+  }
+  
+  if (currentQ === 22) {
+    showResult();
+  } else {
+    currentQ++;
+    renderQuestion();
+  }
+}
+
+function prevQuestion(){
+  if (currentQ > 0) {
+    currentQ--;
+    renderQuestion();
+  }
+}
+
+function goBack(){
+  if (currentQ === 0) {
+    showPage('homePage');
+  } else {
+    prevQuestion();
+  }
+}
+
+// ========== 结果计算 ==========
+function calculateScore(){
+  let total = 0;
+  let max = 0;
+  
+  questions.forEach(q => {
+    const ansIdx = answers[q.id];
+    if (ansIdx !== undefined) {
+      total += q.options[ansIdx].score;
+    }
+    max += 10; // 每题最高分10分
+  });
+  
+  return { total, max, percent: Math.round(total / max * 100) };
+}
+
+function showResult(){
+  const { total, max, percent } = calculateScore();
+  
+  showPage('resultPage');
+  
+  // 动画显示分数
+  setTimeout(() => {
+    document.getElementById('scoreCircle').style.strokeDashoffset = 440 - (440 * percent / 100);
+    animateNumber('scorePercent', percent);
+  }, 100);
+  
+  // 风险等级
+  const badge = document.getElementById('riskBadge');
+  if (percent >= 70) {
+    badge.className = 'risk-badge risk-low';
+    badge.textContent = '✓ 低风险 - 通过率较高';
+  } else if (percent >= 50) {
+    badge.className = 'risk-badge risk-medium';
+    badge.textContent = '⚠ 中风险 - 需要准备';
+  } else {
+    badge.className = 'risk-badge risk-high';
+    badge.textContent = '✗ 高风险 - 建议暂缓';
+  }
+  
+  // 生成预设分析
+  generatePresetAnalysis(percent);
+}
+
+function animateNumber(id, target){
+  const el = document.getElementById(id);
+  let current = 0;
+  const step = target / 30;
+  const timer = setInterval(() => {
+    current += step;
+    if (current >= target) {
+      current = target;
+      clearInterval(timer);
+    }
+    el.textContent = Math.round(current) + '%';
+  }, 50);
+}
+
+function generatePresetAnalysis(percent){
+  // 总体评估
+  const overallTexts = {
+    high: '您的综合条件较为优秀，签证通过率较高。建议按照常规流程准备材料，重点突出您的回国约束力和赴美目的的真实性。',
+    medium: '您的综合条件处于中等水平，签证通过率一般。建议针对薄弱环节进行补强，准备充分的辅助材料以提升通过率。',
+    low: '您的综合条件存在一定风险，签证通过率较低。建议暂缓申请，先针对薄弱环节进行改善，或寻求专业签证顾问的帮助。'
+  };
+  
+  const level = percent >= 70 ? 'high' : percent >= 50 ? 'medium' : 'low';
+  document.getElementById('overallText').textContent = overallTexts[level];
+  
+  // 优势分析
+  const strengths = [];
+  if (answers['travel_history'] >= 2) strengths.push('丰富的出境旅行记录，证明良好的国际旅行信用');
+  if (answers['visa_history'] === 1) strengths.push('曾有美签获批记录，履约情况良好');
+  if (answers['marriage'] === 0) strengths.push('已婚状态，家庭约束力强');
+  if (answers['relatives'] === 0) strengths.push('无在美亲属，移民倾向风险低');
+  if (answers['hukou'] <= 1) strengths.push('一线城市户籍，社会稳定性高');
+  
+  // 学生特有优势
+  if (answers['age'] === 0) {
+    if (answers['grade'] === 1 || answers['grade'] === 2) strengths.push('大二/大三在读，是签证申请的最佳时机');
+    if (answers['school_level'] <= 2) strengths.push('就读于985/C9等顶尖高校，学术背景优秀');
+    if (answers['gpa'] === 0) strengths.push('学业成绩优异，排名前10%');
+    if (answers['activities'] >= 2) strengths.push('丰富的课外活动经历，综合素质突出');
+  } else {
+    // 成人特有优势
+    if (answers['employment'] === 0) strengths.push('在职状态，有稳定的收入来源');
+    if (answers['company_type'] <= 1) strengths.push('就职于国企/外企/事业单位，工作稳定性高');
+    if (answers['income'] >= 3) strengths.push('收入水平较高，经济实力充足');
+    if (answers['property'] >= 1) strengths.push('拥有房产，国内资产约束力强');
+    if (answers['work_years'] >= 3) strengths.push('工作年限较长，职业发展稳定');
+  }
+  
+  if (strengths.length === 0) strengths.push('综合条件较为均衡，无明显短板');
+  document.getElementById('strengthsList').innerHTML = strengths.slice(0, 4).map(s => `<li>${s}</li>`).join('');
+  
+  // 风险提示
+  const risks = [];
+  if (answers['travel_history'] <= 1) risks.push('出境记录较少，建议先前往其他国家积累旅行信用');
+  if (answers['visa_history'] === 2) risks.push('曾有拒签记录，需要充分解释拒签原因并提供新材料');
+  if (answers['relatives'] >= 2) risks.push('有直系亲属在美，需重点证明无移民倾向');
+  if (answers['duration'] >= 3) risks.push('计划停留时间较长，需提供充分的行程安排和回国证明');
+  if (answers['criminal'] >= 1) risks.push('有违法记录，可能影响签证审批');
+  
+  // 学生特有风险
+  if (answers['age'] === 0) {
+    if (answers['grade'] === 0 || answers['grade'] === 3) risks.push('大一/大四在读，约束力相对较弱，建议提供更强的回国证明');
+    if (answers['parents_income'] <= 2) risks.push('家庭经济状况一般，需证明有足够资金支持赴美行程');
+    if (answers['future_plan'] >= 2) risks.push('毕业后规划不明确，建议明确回国发展计划');
+  } else {
+    // 成人特有风险
+    if (answers['employment'] >= 2) risks.push('目前无稳定工作，收入来源不稳定');
+    if (answers['income'] <= 1) risks.push('收入水平较低，可能影响签证官对支付能力的判断');
+    if (answers['property'] === 0) risks.push('无房产，国内资产约束力较弱');
+    if (answers['deposit'] <= 1) risks.push('银行存款较少，建议增加存款证明');
+  }
+  
+  if (risks.length === 0) risks.push('暂未发现明显风险点，保持现有优势即可');
+  document.getElementById('risksList').innerHTML = risks.slice(0, 4).map(r => `<li>${r}</li>`).join('');
+  
+  // 改进建议
+  const suggestions = [
+    '准备充分的回国约束力证明：工作证明、在读证明、房产证等',
+    '提供详细的行程规划：机票酒店预订、每日行程安排',
+    '准备充足的资金证明：银行流水、存款证明、收入证明',
+    '撰写真实的赴美目的说明信，突出访问的临时性和必要性',
+    '如有拒签史，准备解释信说明情况变化',
+    '建议提前3-6个月开始准备材料，确保信息真实完整'
+  ];
+  document.getElementById('suggestionsList').innerHTML = suggestions.map(s => `<li>${s}</li>`).join('');
+}
+
+// ========== AI深度分析 - 调用后端API ==========
+async function generateAIAnalysis(){
+  document.getElementById('aiBtn').classList.add('hidden');
+  document.getElementById('aiLoading').classList.add('show');
+  document.getElementById('aiError').classList.add('hidden');
+  
+  const { percent } = calculateScore();
+  
+  // 构建用户回答摘要
+  const answerSummary = questions.map(q => {
+    const ansIdx = answers[q.id];
+    const ans = ansIdx !== undefined ? q.options[ansIdx].text : '未回答';
+    return `${q.title}: ${ans}`;
+  }).join('\n');
+  
+  try {
+    // 调用后端API - API Key在服务端环境变量中
+    const response = await fetch('/api/visa-analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        score: percent,
+        answers: answerSummary,
+        ageGroup: answers['age'] === 0 ? 'student' : 'adult'
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API错误: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // 显示AI分析结果
+    document.getElementById('aiLoading').classList.remove('show');
+    
+    if (data.overall) {
+      document.getElementById('overallText').textContent = data.overall;
+    }
+    if (data.strengths && data.strengths.length > 0) {
+      document.getElementById('strengthsList').innerHTML = data.strengths.map(s => `<li>${s}</li>`).join('');
+    }
+    if (data.risks && data.risks.length > 0) {
+      document.getElementById('risksList').innerHTML = data.risks.map(r => `<li>${r}</li>`).join('');
+    }
+    if (data.suggestions && data.suggestions.length > 0) {
+      document.getElementById('suggestionsList').innerHTML = data.suggestions.map(s => `<li>${s}</li>`).join('');
+    }
+    
+    // 添加AI标签
+    const existingLabel = document.querySelector('#presetAnalysis > div:first-child');
+    if (!existingLabel || !existingLabel.textContent.includes('AI')) {
+      document.getElementById('presetAnalysis').insertAdjacentHTML('afterbegin', 
+        '<div style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;font-weight:600">🤖 AI深度分析报告</div>'
+      );
+    }
+    
+  } catch (error) {
+    document.getElementById('aiLoading').classList.remove('show');
+    document.getElementById('aiError').textContent = 'AI分析服务暂时不可用，请稍后重试。';
+    document.getElementById('aiError').classList.remove('hidden');
+    document.getElementById('aiBtn').classList.remove('hidden');
+    console.error('AI分析错误:', error);
+  }
+}
+
+function resetQuiz(){
+  currentQ = 0;
+  answers = {};
+  questions = [];
+  document.getElementById('scoreCircle').style.strokeDashoffset = 440;
+  document.getElementById('aiBtn').classList.remove('hidden');
+  document.getElementById('aiError').classList.add('hidden');
+  const aiLabel = document.querySelector('#presetAnalysis > div:first-child');
+  if (aiLabel && aiLabel.textContent.includes('AI')) {
+    aiLabel.remove();
+  }
+  startQuiz();
+}
+</script>
+</body>
+</html>
